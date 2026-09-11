@@ -21,7 +21,8 @@ export enum AutodetectedSearchType {
 }
 
 export interface SearchResults {
-    results: SearchResults[]
+    results: SearchResult[]
+    took: number
 }
 
 export interface SearchResult<Meta extends Record<string, any> = {}> {
@@ -51,7 +52,7 @@ export interface BaseSearchResultActionResolution {
     success: boolean
 }
 
-export interface SearchResultActioOpenUrlResolution extends BaseSearchResultActionResolution {
+export interface SearchResultActionOpenUrlResolution extends BaseSearchResultActionResolution {
     type: SearchResultActionResolutionType.Message,
     message: string
     color: Color
@@ -62,8 +63,14 @@ export interface SearchResultActionMessageResolution extends BaseSearchResultAct
     url: string
 }
 
+export type SearchResultActionResolution =
+    SearchResultActionMessageResolution
+    | SearchResultActionOpenUrlResolution
+
 export enum SearchResultActionResolutionType {
     OpenUrl,
     Message,
     Embed
 }
+
+export type SearchResultActionHandler<Meta extends Record<string, any> = {}> = (id: string, meta: Meta) => Promise<SearchResultActionResolution>

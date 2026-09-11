@@ -1,8 +1,10 @@
-import { SearchParams, SearchResult, SearchResults } from "./searchManager.js";
+import { SearchParams, SearchResult, SearchResultActionHandler, SearchResultActionResolution, SearchResults } from "./searchManager.js";
 
 export default abstract class AbstractProvider<Name extends string> {
 
     abstract readonly displayName: string
+
+    protected handlers: Map<string, SearchResultActionHandler<any>> = new Map()
 
     constructor(public readonly name: Name, public readonly supportedMediaTypes: MediaType[], public readonly sourceType: MediaSource) {
 
@@ -17,7 +19,21 @@ export default abstract class AbstractProvider<Name extends string> {
             && params.sources.has(this.sourceType)
     }
 
-    public registerHandler<Meta extends Record<string, any> = {}>(id: string, method: (id: string, meta: Meta) => Promise<>)
+    public registerHandler<Meta extends Record<string, any> = {}>(id: string, method: SearchResultActionHandler<Meta>) {
+        this.handlers.set(id, method)
+    }
+
+    public invokeHandler(id: string, meta: Record<string, any>): Promise<SearchResultActionResolution> {
+        return new Promise(async (resolve, reject) => {
+            if (!this.handlers.has(id)) return reject(class ProviderActionHandlerNotFoundError extends Error {
+                constructor() {
+                    super(`Provider action handler with id ${id} not found`)
+                }
+            })
+
+            resolve(await this.handlers.get(id)!(id, meta))
+        })
+    }
 
 }
 
