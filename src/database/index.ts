@@ -37,6 +37,9 @@ export default class Database {
         });
 
         this._orm = _orm;
+        if (process.env.DB_AUTO_UPDATE === "true") {
+            await this._orm.schema.update();
+        }
         this._em = _orm.em.fork() // dont use the root em for anything
 
         this.repository = {

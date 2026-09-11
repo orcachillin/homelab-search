@@ -8,7 +8,7 @@ export default async function Index() {
 	return (
 		<>
 			{"<!DOCTYPE html>"}
-			<html data-bs-theme="dark">
+			<html lang="en">
 				<Head />
 				<body hx-ext="preload, sse">
 					<MainLayout>

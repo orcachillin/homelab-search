@@ -1,27 +1,29 @@
-FROM node:22-alpine AS build
+FROM node:22-alpine AS dependencies
 WORKDIR /app
-COPY package*.json ./
+COPY package.json package-lock.json ./
 RUN npm ci
+
+FROM dependencies AS build
 COPY . .
-RUN npm run build
-RUN npx mikro-orm cache:generate --combined
-RUN mkdir -p docker && npx mikro-orm schema:create --dump > docker/schema.sql 2>/dev/null; test -s docker/schema.sql || echo "-- no entities" > docker/schema.sql
+RUN npm run build \
+    && npx mikro-orm cache:generate --combined \
+    && npm prune --omit=dev
 
-RUN npm ci --omit=dev && cp -r /app/node_modules /app/node_modules_prod
+FROM node:22-alpine AS runtime
+ENV NODE_ENV=production \
+    PORT=3000 \
+    CONFIG_PATH=/app/config.toml
+WORKDIR /app
 
-FROM node:22-alpine
-WORKDIR /
-RUN apk add --no-cache postgresql postgresql-client redis bash
+COPY --from=build --chown=node:node /app/package.json /app/package-lock.json ./
+COPY --from=build --chown=node:node /app/node_modules ./node_modules
+COPY --from=build --chown=node:node /app/dist ./dist
+COPY --from=build --chown=node:node /app/temp ./temp
+COPY --from=build --chown=node:node /app/config.example.toml ./config.example.toml
 
-COPY --from=build /app/dist /dist
-COPY --from=build /app/temp /temp
-COPY --from=build /app/node_modules_prod /node_modules
-COPY --from=build /app/package.json /package.json
-COPY --from=build /app/docker/schema.sql /docker/schema.sql
-
-COPY docker/entrypoint.sh /entrypoint.sh
-
-RUN chmod +x /entrypoint.sh
-
+USER node
 EXPOSE 3000
-ENTRYPOINT ["/entrypoint.sh"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD wget --quiet --spider http://127.0.0.1:3000/health || exit 1
+
+CMD ["node", "dist/index.js", "--prod"]

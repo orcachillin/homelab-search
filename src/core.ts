@@ -3,6 +3,7 @@ import CacheService from "./services/cache/cacheService.js";
 import ClientService from "./services/client/clientService.js";
 import ContextService from "./services/context/contextService.js";
 import SettingsService from "./services/settings/settingsService.js";
+import ProviderService from "./services/provider/providerService.js";
 import SSEService from "./services/sse/sseService.js";
 import WebService from "./services/web/webService.js";
 import { Logger } from "./util/logger.js";
@@ -25,6 +26,7 @@ export default class Core {
         new WebService(),
         new ContextService(),
         new SSEService(),
+        new ProviderService(),
         new ClientService(), // make sure it registers its wildcard route last
     ] as const;
 

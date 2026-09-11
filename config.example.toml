@@ -1,0 +1,61 @@
+[[providers]]
+type = "jellyfin"
+id = "home"
+name = "Jellyfin Home"
+url = "http://localhost:8096"
+public_url = "https://jellyfin.example.com"
+api_key = "replace-me"
+icon = "jellyfin"
+
+[[providers]]
+type = "jellyfin"
+id = "remote"
+name = "Jellyfin Remote"
+url = "http://remote-jellyfin:8096"
+public_url = "https://remote-jellyfin.example.com"
+username = "replace-me"
+password = "replace-me"
+icon = "jellyfin"
+
+[[providers]]
+type = "sonarr"
+id = "shows"
+name = "Sonarr"
+url = "http://localhost:8989"
+public_url = "https://sonarr.example.com"
+api_key = "replace-me"
+media = ["tv", "anime"]
+icon = "sonarr"
+# root_folder = "/tv"
+# quality_profile_id = 1
+
+[[providers]]
+type = "tidarr"
+id = "tidal"
+name = "Tidarr"
+url = "http://localhost:8484"
+public_url = "https://tidarr.example.com"
+api_key = "replace-me"
+country_code = "US"
+icon = "tidal"
+
+[[providers]]
+type = "radarr"
+id = "movies"
+name = "Radarr"
+url = "http://localhost:7878"
+public_url = "https://radarr.example.com"
+api_key = "replace-me"
+icon = "radarr"
+# root_folder = "/movies"
+# quality_profile_id = 1
+
+[[providers]]
+type = "navidrome"
+id = "music"
+name = "Navidrome"
+url = "http://localhost:4533"
+public_url = "https://music.example.com"
+username = "replace-me"
+password = "replace-me"
+icon = "navidrome"

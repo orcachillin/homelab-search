@@ -1,92 +1,185 @@
-*, *::before, *::after {
-	box-sizing: border-box;
-	margin: 0;
-	padding: 0;
-}
+@import "bootstrap/scss/bootstrap";
+@import "bootstrap-icons/font/bootstrap-icons.css";
 
-:root {
-	--bg: #0f0f11;
-	--surface: #1a1a1e;
-	--border: #2a2a30;
-	--text: #e4e4e7;
-	--text-muted: #a1a1aa;
-	--accent: #6366f1;
-	--accent-hover: #818cf8;
-}
-
-html {
-	font-family: system-ui, -apple-system, sans-serif;
-	background: var(--bg);
-	color: var(--text);
-	line-height: 1.6;
-}
-
-a {
-	color: var(--accent);
-	text-decoration: none;
-}
-
-a:hover {
-	color: var(--accent-hover);
+html,
+body {
+	min-height: 100%;
+	background: $gray-900;
+	color: $gray-100;
 }
 
 .layout {
 	min-height: 100vh;
-	display: flex;
-	flex-direction: column;
 }
 
-.navbar {
-	display: flex;
-	align-items: center;
-	gap: 1.5rem;
-	padding: 1rem 2rem;
-	background: var(--surface);
-	border-bottom: 1px solid var(--border);
+#main {
+	max-width: 1400px;
+	padding-top: 4rem;
+	padding-bottom: 4rem;
 }
 
-.navbar-brand {
-	font-weight: 700;
-	font-size: 1.25rem;
-	color: var(--text) !important;
-	letter-spacing: -0.02em;
+.search-shell {
+	position: relative;
 }
 
-.navbar-links {
-	display: flex;
-	gap: 1rem;
-}
-
-.navbar-right {
-	margin-left: auto;
-}
-
-.container {
-	flex: 1;
-	width: 100%;
-	max-width: 960px;
+.search-main {
+	max-width: 1140px;
 	margin: 0 auto;
-	padding: 2rem;
 }
 
-.demo {
-	display: flex;
-	flex-direction: column;
-	align-items: flex-start;
-	gap: 1rem;
+.activity-sidebar {
+	position: fixed;
+	z-index: 1030;
+	top: 1rem;
+	left: 1rem;
 }
 
-.demo a {
+.activity-toggle {
+	position: absolute;
+	top: 0;
+	left: 0;
+	white-space: nowrap;
+}
+
+.activity-panel {
+	width: min(24rem, calc(100vw - 5rem));
+	max-height: calc(100vh - 6rem);
+	overflow: auto;
+	transform: translateX(calc(-100% - 2rem));
+	opacity: 0;
+	pointer-events: none;
+	transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.activity-sidebar[data-open="true"] .activity-panel {
+	transform: translateX(0);
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.activity-sidebar[data-open="true"] .activity-toggle {
+	display: none;
+}
+
+.form-control.bg-dark::placeholder {
+	color: $gray-500;
+}
+
+.result-thumbnail {
+	width: 3rem;
+	height: 3rem;
+	flex: 0 0 3rem;
+	object-fit: cover;
+}
+
+.result-thumbnail-placeholder {
+	display: grid;
+	place-items: center;
+	background: $gray-700;
+}
+
+.search-result-item {
+	background-color: $gray-900;
+}
+
+.provider-icon {
+	width: 1rem;
+	height: 1rem;
+	filter: invert(1);
+}
+
+.provider-icon-sm {
+	width: 0.75rem;
+	height: 0.75rem;
+}
+
+.progress {
+	height: 0.65rem;
+	background-color: $gray-700;
+}
+
+.result-details {
+	max-height: 0;
+	overflow: hidden;
+	opacity: 0;
+	transition: max-height 0.2s ease, opacity 0.2s ease, margin-top 0.2s ease;
+}
+
+.result-detail-grid {
+	display: grid;
+	grid-template-columns: repeat(2, max-content minmax(0, 1fr));
+	gap: 0.15rem 0.5rem;
+}
+
+.result-detail-grid dt,
+.result-detail-grid dd {
+	margin: 0;
+}
+
+.search-result-item:hover .result-details,
+.search-result-item:focus-within .result-details,
+.search-result-item:focus .result-details {
+	max-height: 12rem;
+	margin-top: 0.5rem;
+	opacity: 1;
+}
+
+.search-result-item:hover .result-summary,
+.search-result-item:focus-within .result-summary,
+.search-result-item:focus .result-summary {
+	display: none;
+}
+
+.search-result-item > .btn-group .btn {
+	white-space: nowrap;
+}
+
+.htmx-indicator {
+	display: none;
+	margin-right: 0.4rem;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
 	display: inline-block;
-	padding: 0.5rem 1.25rem;
-	background: var(--accent);
-	color: #fff;
-	border-radius: 6px;
-	font-weight: 600;
-	font-size: 0.9rem;
 }
 
-.demo a:hover {
-	background: var(--accent-hover);
-	color: #fff;
+@media (max-width: 575.98px) {
+	#main {
+		padding-top: 2rem;
+	}
+
+	.input-group-lg {
+		flex-wrap: wrap;
+	}
+
+	.input-group-lg > .form-control {
+		width: 100%;
+		flex-basis: 100%;
+		border-radius: $border-radius !important;
+	}
+
+	.input-group-lg > .input-group-append {
+		width: 100%;
+		margin: 0.5rem 0 0;
+	}
+
+	.input-group-lg > .input-group-append > .btn {
+		width: 100%;
+		border-radius: $border-radius !important;
+	}
+
+	.list-group-item {
+		flex-wrap: wrap;
+	}
+
+	.list-group-item > .btn-group {
+		width: 100%;
+		margin: 0.75rem 0 0 4rem !important;
+	}
+
+	.activity-sidebar {
+		top: 0.5rem;
+		left: 0.5rem;
+	}
 }

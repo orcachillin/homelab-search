@@ -1,6 +1,32 @@
 # dev env containers!
 
 services:
+  app:
+    profiles: ["production"]
+    build:
+      context: .
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      BASE_URL: ${BASE_URL:-http://localhost:3000}
+      CONFIG_PATH: /app/config.toml
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-nitr}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_AUTO_UPDATE: ${DB_AUTO_UPDATE:-true}
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - "${CONFIG_PATH:-./config.toml}:/app/config.toml:ro"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   db:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -12,6 +38,11 @@ services:
       - "${DB_PORT_EXTERNAL:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-nitr}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis:7-alpine
@@ -20,6 +51,11 @@ services:
       - "${REDIS_PORT_EXTERNAL:-6379}:6379"
     volumes:
       - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   pgdata:

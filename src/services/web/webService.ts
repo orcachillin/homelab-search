@@ -22,6 +22,10 @@ export default class WebService extends AbstractService<"web"> {
         this.app.use(express.json());
         this.app.use(express.urlencoded({ extended: true }));
 
+        this.app.get("/health", (_req, res) => {
+            res.status(200).json({ status: "ok" })
+        })
+
         this.app.use("/_", express.static(resolve("./src/static/")))
         this.app.use("/__", express.static(resolve("./dist/client")))
 

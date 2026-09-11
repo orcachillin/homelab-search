@@ -1,4 +1,4 @@
-import { SearchParams, SearchResult, SearchResultActionHandler, SearchResultActionResolution, SearchResults } from "./searchManager.js";
+import type { SearchParams, SearchResult, SearchResultActionHandler, SearchResultActionResolution, SearchResults } from "./searchManager.js";
 
 export default abstract class AbstractProvider<Name extends string> {
 
@@ -6,35 +6,58 @@ export default abstract class AbstractProvider<Name extends string> {
 
     protected handlers: Map<string, SearchResultActionHandler<any>> = new Map()
 
-    constructor(public readonly name: Name, public readonly supportedMediaTypes: MediaType[], public readonly sourceType: MediaSource) {
+    constructor(
+        public readonly name: Name,
+        public readonly supportedMediaTypes: MediaType[],
+        public readonly sourceType: MediaSource,
+        public readonly supportedResultTypes: SearchResultType[] = [],
+        public readonly icon?: string
+    ) {
 
     }
 
     public abstract init(): Promise<void>
     public abstract query(params: SearchParams): Promise<SearchResults>
 
+    public async getThumbnail(_id: string): Promise<ProviderThumbnail> {
+        throw new Error(`Provider ${this.name} does not support thumbnails`)
+    }
+
+    public async enrichResult(_result: SearchResult): Promise<void> { }
+
+    public async getActivity(): Promise<ProviderActivity[]> { return [] }
+
     public async shouldUse(params: SearchParams): Promise<boolean> {
-        return params.providers.has(this.name)
-            && this.supportedMediaTypes.some((t) => params.mediaTypes.has(t))
-            && params.sources.has(this.sourceType)
+        return (params.providers.size === 0 || params.providers.has(this.name))
+            && (params.mediaTypes.size === 0 || this.supportedMediaTypes.some((t) => params.mediaTypes.has(t)))
+            && (params.sources.size === 0 || params.sources.has(this.sourceType))
+            && (params.resultTypes.size === 0 || this.supportedResultTypes.some((t) => params.resultTypes.has(t)))
     }
 
     public registerHandler<Meta extends Record<string, any> = {}>(id: string, method: SearchResultActionHandler<Meta>) {
         this.handlers.set(id, method)
     }
 
-    public invokeHandler(id: string, meta: Record<string, any>): Promise<SearchResultActionResolution> {
-        return new Promise(async (resolve, reject) => {
-            if (!this.handlers.has(id)) return reject(class ProviderActionHandlerNotFoundError extends Error {
-                constructor() {
-                    super(`Provider action handler with id ${id} not found`)
-                }
-            })
-
-            resolve(await this.handlers.get(id)!(id, meta))
-        })
+    public async invokeHandler(actionId: string, resultId: string): Promise<SearchResultActionResolution> {
+        const handler = this.handlers.get(actionId)
+        if (!handler) throw new Error(`Provider action handler with id ${actionId} not found`)
+        return handler(resultId)
     }
 
+}
+
+export interface ProviderThumbnail {
+    data: Uint8Array
+    contentType: string
+}
+
+export interface ProviderActivity {
+    id: string
+    title: string
+    detail: string
+    status: "pending" | "active" | "paused" | "attention"
+    progress?: number
+    trackingIds: string[]
 }
 
 export enum MediaType {
@@ -63,4 +86,11 @@ export enum MediaSource {
      * torbox? who knows
      */
     Streamed
+}
+
+export enum SearchResultType {
+    Artist = "artist",
+    Album = "album",
+    Song = "song",
+    Person = "person",
 }

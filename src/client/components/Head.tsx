@@ -13,6 +13,8 @@ export default async function Head() {
 	return (
 		<>
 			<head>
+				<meta name="viewport" content="width=device-width, initial-scale=1" />
+				<title>Homelab Search</title>
 				<script type="module" src="/__/index.js"></script>
 				<link rel="stylesheet" href="/__/index.css"></link>
 				<link rel="icon" href="/_/icon.webp" />

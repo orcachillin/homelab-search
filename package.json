@@ -4,7 +4,7 @@
   "description": "the modern, server side only web framework",
   "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run components:generate && tsc && node --test dist/config/providerConfig.test.js dist/services/provider/searchManager.test.js dist/services/provider/searchSyntax.test.js",
     "components:generate": "node scripts/generate-component-manifest.mjs",
     "components:watch": "node scripts/generate-component-manifest.mjs --watch",
     "build": "npm run components:generate && tsc && vite build",
@@ -47,10 +47,14 @@
     "@mikro-orm/decorators": "^7.1.4",
     "@mikro-orm/postgresql": "^7.1.4",
     "@paralleldrive/cuid2": "^3.3.0",
+    "bootstrap": "^4.6.2",
+    "bootstrap-icons": "^1.13.1",
     "chalk": "^5.6.2",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "redis": "^6.0.0"
+    "redis": "^6.0.0",
+    "simple-icons": "^16.30.0",
+    "smol-toml": "^1.8.0"
   }
 }

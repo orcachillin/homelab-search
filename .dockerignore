@@ -1,0 +1,9 @@
+.git
+.github
+.env
+config.toml
+dist
+node_modules
+temp
+npm-debug.log*
+README.md
