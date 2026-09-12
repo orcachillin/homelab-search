@@ -66,3 +66,10 @@ export function providersSupportingResult(resultType: SearchResultType): string 
 		.map((provider) => provider.name)
 		.join(",");
 }
+
+export function providersSupportingSource(source: MediaSource): string {
+	return Core.services.provider.providerList
+		.filter((provider) => provider.sourceType === source)
+		.map((provider) => provider.name)
+		.join(",");
+}

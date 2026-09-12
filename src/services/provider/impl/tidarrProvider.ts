@@ -1,4 +1,4 @@
-import AbstractProvider, { MediaSource, MediaType, SearchResultType, type ProviderActivity, type ProviderThumbnail } from "../abstractProvider.js"
+import AbstractProvider, { MediaSource, MediaType, SearchResultType, type ProviderActivity, type ProviderDownload, type ProviderThumbnail } from "../abstractProvider.js"
 import { Color, SearchResultActionResolutionType, type SearchParams, type SearchResult, type SearchResults } from "../searchManager.js"
 import type { TidarrInstanceConfig } from "../../../config/providerConfig.js"
 
@@ -132,7 +132,7 @@ export default class TidarrProvider extends AbstractProvider<`tidarr.${string}`>
             this.request<TidarrQueueStatus>("/api/queue/status"),
         ])
         const activeStatuses = new Set(["queue", "queue_download", "download", "queue_processing", "processing"])
-        return queueItems.filter((item) => activeStatuses.has(item.status ?? "")).map((item) => {
+        return queueItems.reverse().filter((item) => activeStatuses.has(item.status ?? "")).map((item) => {
             const total = item.progress?.total
             const current = item.progress?.current
             const progress = total && total > 0 && typeof current === "number" ? Math.min(Math.max(current / total * 100, 0), 100) : undefined
@@ -170,6 +170,7 @@ export default class TidarrProvider extends AbstractProvider<`tidarr.${string}`>
             thumbnailUrl: image ? thumbnailUrl(this.name, `${resultId}:${image}`) : "",
             actions: [
                 { id: "open", label: `Open in ${this.displayName}`, color: Color.Secondary, icon: "box-arrow-up-right" },
+                ...(type === "song" ? [{ id: "browser-download", label: "Download", color: Color.Secondary, icon: "download" } as const] : []),
                 ...(!downloaded ? [{ id: "download", label: `Add to ${this.displayName}`, color: Color.Primary, icon: "download" } as const] : []),
             ],
             meta: { itemType: type === "song" ? "Track" : type[0].toUpperCase() + type.slice(1), tidarrDownloaded: downloaded, tidarrType: type, details: compactDetails([["Tidal ID", id], ["Tidarr", downloaded ? "Previously processed" : undefined], ...details]), ...metadata },
@@ -180,6 +181,20 @@ export default class TidarrProvider extends AbstractProvider<`tidarr.${string}`>
         const [type, id] = resultId.split(":", 2)
         if (!id || !["artist", "album", "song"].includes(type)) throw new Error("Invalid Tidarr result ID")
         return [type as "artist" | "album" | "song", id]
+    }
+
+    public async getDownload(resultId: string, range?: string): Promise<ProviderDownload> {
+        const [type, id] = this.parseResultId(resultId)
+        if (type !== "song") throw new Error("Tidarr browser downloads are only available for tracks")
+        const signed = await this.request<{ url?: string }>(`/api/stream/sign/${encodeURIComponent(id)}`)
+        if (!signed.url) throw new Error("Tidarr returned no playback URL")
+        const playbackUrl = new URL(signed.url, `${this.config.url}/`)
+        const response = await fetch(playbackUrl, {
+            headers: range ? { Range: range } : undefined,
+            signal: AbortSignal.timeout(30_000),
+        })
+        const track = await this.request<TidalTrack>(`/proxy/tidal/v1/tracks/${encodeURIComponent(id)}`, { countryCode: this.config.countryCode })
+        return { response, filename: track.title ? sanitizeFilename(track.title) : `tidal-${id}` }
     }
 
     private async artistAlbumTrackingIds(artistId: string): Promise<string[]> {
@@ -230,4 +245,8 @@ function compactDetails(entries: [string, unknown][]) {
 function formatDuration(seconds?: number): string | undefined {
     if (!seconds) return undefined
     return `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, "0")}`
+}
+
+function sanitizeFilename(value: string): string {
+    return value.replace(/[\\/:*?"<>|\x00-\x1f]/g, "_").slice(0, 180)
 }

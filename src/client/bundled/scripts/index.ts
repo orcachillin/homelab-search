@@ -26,6 +26,28 @@ function updateSearchOptions(form: HTMLFormElement) {
             control.classList.toggle("active", input.checked)
         }
     })
+
+    let compatibleProviders = activeProviders
+    for (const inputName of ["mediaTypes", "resultTypes"]) {
+        const selected = [...form.querySelectorAll<HTMLInputElement>(`input[name="${inputName}"]:checked:not(:disabled)`)]
+        if (selected.length === 0) continue
+        const supported = new Set(selected.flatMap((input) =>
+            (input.closest<HTMLElement>("[data-supported-providers]")?.dataset.supportedProviders ?? "").split(",").filter(Boolean)))
+        compatibleProviders = compatibleProviders.filter((provider) => supported.has(provider))
+    }
+
+    form.querySelectorAll<HTMLElement>("[data-source-option]").forEach((control) => {
+        const supported = (control.dataset.supportedProviders ?? "").split(",")
+        const enabled = compatibleProviders.some((provider) => supported.includes(provider))
+        const input = control.querySelector<HTMLInputElement>("input")
+        control.classList.toggle("disabled", !enabled)
+        control.setAttribute("aria-disabled", String(!enabled))
+        if (input) {
+            input.disabled = !enabled
+            if (!enabled) input.checked = false
+            control.classList.toggle("active", input.checked)
+        }
+    })
 }
 
 function updateInlineFilters(form: HTMLFormElement) {
@@ -90,7 +112,7 @@ document.addEventListener("change", (event) => {
     const form = input.closest<HTMLFormElement>("#search-form")
     if (!form) return
     input.closest(".btn")?.classList.toggle("active", input.checked)
-    if (input.name === "providers") updateSearchOptions(form)
+    if (["providers", "mediaTypes", "resultTypes"].includes(input.name)) updateSearchOptions(form)
 }, true)
 
 document.addEventListener("click", (event) => {
@@ -99,14 +121,20 @@ document.addEventListener("click", (event) => {
         activityOpen = !activityOpen
         document.querySelector<HTMLElement>("#provider-activity")?.setAttribute("data-open", String(activityOpen))
     }
+    if (target.closest("[data-activity-close]")) {
+        activityOpen = false
+        document.querySelector<HTMLElement>("#provider-activity")?.setAttribute("data-open", "false")
+    }
     if (target.closest("[data-activity-all]")) activityOpen = true
 })
 
 document.addEventListener("htmx:beforeRequest", (event) => {
     const target = event.target as HTMLElement
     if (!target.closest("[data-download-action]")) return
-    activityOpen = true
-    document.querySelector<HTMLElement>("#provider-activity")?.setAttribute("data-open", "true")
+    if (!window.matchMedia("(max-width: 575.98px)").matches) {
+        activityOpen = true
+        document.querySelector<HTMLElement>("#provider-activity")?.setAttribute("data-open", "true")
+    }
 })
 
 document.addEventListener("DOMContentLoaded", () => {

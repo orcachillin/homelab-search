@@ -1,6 +1,6 @@
 import Core from "../../../core.js";
 import { MediaSource } from "../../../services/provider/abstractProvider.js";
-import { mediaOptions, providersSupportingMedia, providersSupportingResult, resultTypeOptions, selected, sourceOptions, type SearchProps } from "./searchOptions.js";
+import { mediaOptions, providersSupportingMedia, providersSupportingResult, providersSupportingSource, resultTypeOptions, selected, sourceOptions, type SearchProps } from "./searchOptions.js";
 
 interface SearchFormProps {
 	props: SearchProps
@@ -25,7 +25,7 @@ export function SearchForm({ props, selectedProviders, selectedMedia, selectedSo
 	>
 		<div class="card-body">
 			<div class="input-group input-group-lg">
-				<input type="search" name="query" class="form-control bg-dark text-light border-secondary" placeholder="Search music, movies, shows, books..." value={props.query ?? ""} autocomplete="off" autofocus
+				<input type="search" name="query" class="form-control bg-dark text-light border-secondary" placeholder="Search music, movies, shows, books..." value={props.query ?? ""} autocomplete="off" inputmode="search"
 					hx-get="/-/pages.main" hx-trigger="keyup changed delay:150ms, search" hx-target="#search-results" hx-select="#search-results" hx-swap="outerHTML" hx-include="#search-form" hx-indicator="#search-spinner" />
 				<div class="input-group-append"><button class="btn btn-primary" type="submit"><span id="search-spinner" class="spinner-border spinner-border-sm htmx-indicator" aria-hidden="true"></span> Search</button></div>
 			</div>
@@ -57,7 +57,7 @@ export function SearchForm({ props, selectedProviders, selectedMedia, selectedSo
 				</fieldset>
 
 				<div class="d-flex flex-wrap align-items-end justify-content-between mt-2">
-					<fieldset><legend class="h6">Sources</legend><div class="btn-group-toggle d-flex flex-wrap" data-toggle="buttons">{sourceOptions.map(([value, label]) => <label class={`btn btn-sm btn-outline-light mr-2 mb-2 ${selected(selectedSources, String(value)) ? "active" : ""}`} data-filter-key="source" data-filter-value={value === MediaSource.Local ? "local" : value === MediaSource.Download ? "download" : "streamed"}>
+					<fieldset><legend class="h6">Sources</legend><div class="btn-group-toggle d-flex flex-wrap" data-toggle="buttons">{sourceOptions.map(([value, label]) => <label class={`btn btn-sm btn-outline-light mr-2 mb-2 ${selected(selectedSources, String(value)) ? "active" : ""}`} data-source-option data-supported-providers={providersSupportingSource(value)} data-filter-key="source" data-filter-value={value === MediaSource.Local ? "local" : value === MediaSource.Download ? "download" : "streamed"}>
 						<input type="checkbox" name="sources" value={String(value)} checked={selected(selectedSources, String(value))} autocomplete="off" />{label}
 					</label>)}</div></fieldset>
 					<label class="form-inline text-muted mb-2">Results <select name="limit" class="custom-select custom-select-sm bg-dark text-light border-secondary ml-2">{[10, 20, 50, 100].map((limit) => <option value={String(limit)} selected={selectedLimit === String(limit)}>{limit}</option>)}</select></label>

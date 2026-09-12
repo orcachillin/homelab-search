@@ -6,7 +6,7 @@ import type { BaseItemDto } from "@jellyfin/sdk/lib/generated-client/models/base
 import { ItemFields } from "@jellyfin/sdk/lib/generated-client/models/item-fields.js";
 import { getItemsApi } from "@jellyfin/sdk/lib/utils/api/items-api.js";
 import { getUserApi } from "@jellyfin/sdk/lib/utils/api/user-api.js";
-import AbstractProvider, { MediaSource, MediaType, SearchResultType, type ProviderThumbnail } from "../abstractProvider.js";
+import AbstractProvider, { MediaSource, MediaType, SearchResultType, type ProviderDownload, type ProviderThumbnail } from "../abstractProvider.js";
 import { Color, SearchResultActionResolutionType, type SearchParams, type SearchResult, type SearchResults } from "../searchManager.js";
 import type { JellyfinInstanceConfig } from "../../../config/providerConfig.js";
 
@@ -79,13 +79,15 @@ export default class JellyfinProvider extends AbstractProvider<`jellyfin.${strin
             const details = [item.Type, item.ProductionYear, item.SeriesName, item.Album, ...(item.Artists ?? [])]
                 .filter((value) => value !== undefined && value !== null && value !== "")
 
+            const actions = [{ id: "open", label: "Open in Jellyfin", color: Color.Secondary, icon: "box-arrow-up-right" }]
+            if (downloadableItemTypes.has(item.Type ?? "")) actions.push({ id: "browser-download", label: "Download", color: Color.Secondary, icon: "download" })
             return [{
                 id: item.Id,
                 provider: this,
                 title: item.Name ?? "Untitled",
                 description: item.Overview || details.join(" - "),
                 thumbnailUrl: item.ImageTags?.Primary ? thumbnailUrl(this.name, item.Id) : "",
-                actions: [{ id: "open", label: "Open in Jellyfin", color: Color.Secondary, icon: "box-arrow-up-right" }],
+                actions,
                 meta: {
                     itemType: item.Type,
                     coverArt: item.ImageTags?.Primary ? item.Id : undefined,
@@ -119,6 +121,15 @@ export default class JellyfinProvider extends AbstractProvider<`jellyfin.${strin
         const contentType = String(response.headers["content-type"] ?? "application/octet-stream").split(";")[0]
         if (!contentType.startsWith("image/")) throw new Error("Jellyfin returned a non-image thumbnail")
         return { data: new Uint8Array(response.data), contentType }
+    }
+
+    public async getDownload(id: string, range?: string): Promise<ProviderDownload> {
+        if (!this.api) throw new Error("Jellyfin provider is not initialized")
+        const response = await fetch(`${this.api.basePath}/Items/${encodeURIComponent(id)}/Download`, {
+            headers: { Authorization: this.api.authorizationHeader, ...(range ? { Range: range } : {}) },
+            signal: AbortSignal.timeout(30_000),
+        })
+        return { response }
     }
 
     public async findByProviderId(provider: "Tmdb" | "Tvdb", externalId: number, title: string): Promise<string | undefined> {
@@ -198,3 +209,5 @@ function equal(left: string | null | undefined, right: string | undefined): bool
 function compactDetails(entries: [string, unknown][]) {
     return entries.flatMap(([label, value]) => value === undefined || value === null || value === "" ? [] : [{ label, value: String(value) }])
 }
+
+const downloadableItemTypes = new Set([BaseItemKind.Audio, BaseItemKind.AudioBook, BaseItemKind.Book, BaseItemKind.Episode, BaseItemKind.Movie, BaseItemKind.MusicVideo, BaseItemKind.Video])

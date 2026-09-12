@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import AbstractProvider, { MediaSource, MediaType, SearchResultType, type ProviderThumbnail } from "../abstractProvider.js";
+import AbstractProvider, { MediaSource, MediaType, SearchResultType, type ProviderDownload, type ProviderThumbnail } from "../abstractProvider.js";
 import { Color, SearchResultActionResolutionType, type SearchParams, type SearchResult, type SearchResults } from "../searchManager.js";
 import type { NavidromeInstanceConfig } from "../../../config/providerConfig.js";
 
@@ -156,6 +156,7 @@ export default class NavidromeProvider extends AbstractProvider<`navidrome.${str
             thumbnailUrl: coverArt ? thumbnailUrl(this.name, coverArt) : "",
             actions: [
                 { id: "open", label: "Open in Navidrome", color: Color.Secondary, icon: "box-arrow-up-right" },
+                { id: "browser-download", label: "Download", color: Color.Secondary, icon: "download" },
                 { id: "generate-playlist", label: "Generate playlist", color: Color.Primary, icon: "music-note-list" },
             ],
             meta: { itemType, coverArt, details: compactDetails([["ID", id.slice(id.indexOf(":") + 1)], ...details]) },
@@ -182,6 +183,15 @@ export default class NavidromeProvider extends AbstractProvider<`navidrome.${str
         if (!data) throw new Error(`Navidrome ${endpoint} returned an invalid Subsonic response`)
         if (data.status !== "ok") throw new Error(`Navidrome ${endpoint} failed (${data.error?.code ?? "unknown"}): ${data.error?.message ?? "Unknown error"}`)
         return data
+    }
+
+    public async getDownload(resultId: string, range?: string): Promise<ProviderDownload> {
+        const [, id] = this.parseResultId(resultId)
+        const response = await fetch(this.url("download", { id, format: "raw" }), {
+            headers: range ? { Range: range } : undefined,
+            signal: AbortSignal.timeout(30_000),
+        })
+        return { response }
     }
 
     private url(endpoint: string, params: Record<string, string | number | string[] | undefined>): URL {

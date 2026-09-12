@@ -34,7 +34,10 @@ export async function get({ all }: { all?: string } = {}) {
 			>
 				<div class="card-header py-2 d-flex align-items-center justify-content-between">
 					<strong>Activity <span class="badge badge-secondary">{groups.reduce((count, group) => count + group.activity.length, 0)}</span></strong>
-					<button type="button" class="btn btn-sm btn-outline-light" data-activity-all hx-get={`/-/provider.activity?all=${!showAll}`} hx-target="#provider-activity-content" hx-select="#provider-activity-content" hx-swap="outerHTML show:none">{showAll ? "This session" : "Show all"}</button>
+					<div>
+						<button type="button" class="btn btn-sm btn-outline-light mr-2" data-activity-all hx-get={`/-/provider.activity?all=${!showAll}`} hx-target="#provider-activity-content" hx-select="#provider-activity-content" hx-swap="outerHTML show:none">{showAll ? "This session" : "Show all"}</button>
+						<button type="button" class="btn btn-sm btn-outline-light" data-activity-close aria-label="Close activity"><i class="bi bi-x-lg"></i></button>
+					</div>
 				</div>
 				<div class="list-group list-group-flush">
 					{groups.length === 0

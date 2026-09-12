@@ -27,6 +27,10 @@ export default abstract class AbstractProvider<Name extends string> {
 
     public async getActivity(): Promise<ProviderActivity[]> { return [] }
 
+    public async getDownload(_id: string, _range?: string): Promise<ProviderDownload> {
+        throw new Error(`Provider ${this.name} does not support browser downloads`)
+    }
+
     public async shouldUse(params: SearchParams): Promise<boolean> {
         return (params.providers.size === 0 || params.providers.has(this.name))
             && (params.mediaTypes.size === 0 || this.supportedMediaTypes.some((t) => params.mediaTypes.has(t)))
@@ -58,6 +62,11 @@ export interface ProviderActivity {
     status: "pending" | "active" | "paused" | "attention"
     progress?: number
     trackingIds: string[]
+}
+
+export interface ProviderDownload {
+    response: Response
+    filename?: string
 }
 
 export enum MediaType {

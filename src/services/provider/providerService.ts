@@ -10,6 +10,7 @@ import ArrProvider from "./impl/arrProvider.js";
 import TidarrProvider from "./impl/tidarrProvider.js";
 import * as simpleIcons from "simple-icons";
 import type { SimpleIcon } from "simple-icons";
+import { Readable } from "node:stream";
 
 export default class ProviderService extends AbstractService<"provider"> {
     constructor() {
@@ -77,6 +78,44 @@ export default class ProviderService extends AbstractService<"provider"> {
                 .send(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="${icon}"/></svg>`)
         })
 
+        Core.services.web.addRoute("/api/media-download", async (req, res) => {
+            const providerName = typeof req.query.provider === "string" ? req.query.provider : ""
+            const id = typeof req.query.id === "string" ? req.query.id : ""
+            const provider = this.providers.get(providerName)
+            if (!provider || !id || id.length > 512) {
+                res.sendStatus(404)
+                return
+            }
+
+            try {
+                const download = await provider.getDownload(id, req.get("Range"))
+                const upstream = download.response
+                if (!upstream.ok && upstream.status !== 206) {
+                    res.sendStatus(upstream.status === 404 ? 404 : 502)
+                    return
+                }
+                res.status(upstream.status)
+                for (const header of ["content-type", "content-length", "content-range", "accept-ranges", "etag", "last-modified"]) {
+                    const value = upstream.headers.get(header)
+                    if (value) res.setHeader(header, value)
+                }
+                const disposition = upstream.headers.get("content-disposition")
+                if (disposition) res.setHeader("Content-Disposition", sanitizeDisposition(disposition))
+                else res.setHeader("Content-Disposition", `attachment; filename="${sanitizeFilename(download.filename ?? "download")}"`)
+                res.setHeader("Cache-Control", "private, no-store")
+                res.setHeader("X-Content-Type-Options", "nosniff")
+                if (!upstream.body) {
+                    res.end()
+                    return
+                }
+                Readable.fromWeb(upstream.body as import("node:stream/web").ReadableStream).pipe(res)
+            } catch (error) {
+                this.logger.warn(`Download request failed for provider ${providerName}:`, error)
+                if (!res.headersSent) res.sendStatus(502)
+                else res.destroy()
+            }
+        })
+
         Core.services.web.addRoute("/api/provider-action", async (req, res) => {
             const providerName = String(req.body.provider ?? req.query.provider ?? "")
             const actionId = String(req.body.action ?? req.query.action ?? "")
@@ -136,4 +175,13 @@ function escapeHtml(value: string): string {
         "'": "&#39;",
         '"': "&quot;",
     })[character]!)
+}
+
+function sanitizeFilename(value: string): string {
+    return value.replace(/[\\/:*?"<>|\r\n\x00-\x1f]/g, "_").slice(0, 200) || "download"
+}
+
+function sanitizeDisposition(value: string): string {
+    const filename = /filename\*?=(?:UTF-8''|"?)([^";]+)/i.exec(value)?.[1]
+    return `attachment; filename="${sanitizeFilename(filename ? decodeURIComponent(filename) : "download")}"`
 }
